@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Video Studio</title>
+<style>
+:root{--bg:#fff;--fg:#1b1b1f;--card:#f3f4f7;--ac:#4f46e5}
+@media(prefers-color-scheme:dark){:root{--bg:#121214;--fg:#eee;--card:#1d1d22;--ac:#818cf8}}
+body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;max-width:720px;margin-inline:auto}
+h1{font-size:1.3rem}.card{background:var(--card);border-radius:12px;padding:14px;margin:12px 0}
+textarea{width:100%;box-sizing:border-box;min-height:90px;border-radius:8px;border:1px solid #8884;padding:8px;background:var(--bg);color:var(--fg)}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 16px;margin:6px 4px 0 0;font-size:1rem}
+a{color:var(--ac)}video,img{width:100%;border-radius:8px;margin-top:8px}
+.src{font-size:.85rem;margin:6px 0}
+</style>
+</head>
+<body>
+<h1>🎬 استوديو الفيديو بالذكاء الاصطناعي</h1>
+<div class="card">
+  <b>1) فكرتك</b>
+  <textarea id="idea" placeholder="مثال: مزرعة خضروات في موريتانيا عند الفجر مع ري بالتنقيط"></textarea>
+  <button onclick="analyze()">🔎 بحث وتحليل</button>
+  <div id="sources"></div>
+</div>
+<div class="card">
+  <b>2) الوصف النهائي (يمكنك تعديله)</b>
+  <textarea id="prompt"></textarea>
+  <button onclick="gen('image')">🖼️ توليد صورة</button>
+  <button onclick="gen('video')">🎞️ توليد فيديو</button>
+  <div id="status"></div><div id="result"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+async function analyze(){
+  $('sources').textContent='⏳ جارٍ البحث...';
+  const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:$('idea').value})});
+  const d=await r.json();
+  $('prompt').value=d.prompt;
+  $('sources').innerHTML=d.research.map(s=>`<div class="src">• <a href="${s.url}" target="_blank" rel="noopener">${s.title}</a></div>`).join('');
+}
+async function gen(kind){
+  $('status').textContent='⏳ جارٍ التوليد... قد يستغرق دقائق';$('result').innerHTML='';
+  const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:$('prompt').value,kind})});
+  const {job_id}=await r.json();
+  const t=setInterval(async()=>{
+    const j=await (await fetch('/api/jobs/'+job_id)).json();
+    if(j.status==='done'){clearInterval(t);$('status').textContent='✅ تم';
+      $('result').innerHTML=kind==='image'?`<img src="${j.url}">`:`<video src="${j.url}" controls autoplay loop></video>`;}
+    if(j.status==='error'){clearInterval(t);$('status').textContent='❌ '+j.error;}
+  },3000);
+}
+</script>
+</body>
+</html>
