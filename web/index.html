@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>AI Video Studio</title>
+<style>
+:root{--bg:#0f1420;--card:#1a2233;--tx:#e8edf7;--mu:#93a0b8;--pr:#7c5cff;--ok:#22c55e;--er:#ef4444;--bd:#2a3550;padding-top:env(safe-area-inset-top,0)}
+@media (prefers-color-scheme:light){:root{--bg:#f3f5fb;--card:#fff;--tx:#141a2a;--mu:#5d6985;--bd:#d9deec}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;padding-bottom:84px}
+header{padding:12px 14px;font-weight:800;font-size:20px}
+main{max-width:680px;margin:0 auto;padding:0 12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:12px}
+label{display:block;font-weight:600;margin:10px 0 3px;font-size:15px}
+input,select,textarea{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
+textarea{min-height:84px}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+button{font:inherit;font-weight:700;border:0;border-radius:11px;padding:11px 14px;background:var(--pr);color:#fff}
+button.s{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+button.d{background:transparent;color:var(--er);border:1px solid var(--er)}
+.msg{font-size:14px;color:var(--mu);margin-top:6px;white-space:pre-wrap}
+.out img,.out video{width:100%;border-radius:12px;margin-top:8px;display:block}
+.out h4{margin:12px 0 4px;color:var(--pr)}.out ul{margin:4px 0;padding-inline-start:20px}
+.out a{color:var(--pr)}
+nav{position:fixed;bottom:0;inset-inline:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0)}
+nav button{flex:1;background:none;color:var(--mu);border-radius:0;font-size:12px;padding:8px 2px}
+nav button b{display:block;font-size:20px}nav button.on{color:var(--pr)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.grid div{position:relative}.grid img,.grid video{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}
+.grid i{position:absolute;top:4px;inset-inline-end:4px;background:var(--er);color:#fff;border-radius:50%;width:26px;height:26px;text-align:center;line-height:26px;font-style:normal}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>🎬 AI Video Studio</header>
+<main>
+<section id="t-research">
+ <div class="card"><label>موضوع الفيديو أو الفكرة</label><textarea id="rq" placeholder="مثال: واحة في الصحراء الموريتانية عند الغروب"></textarea>
+ <div class="row"><div><label>لغة المصادر</label><select id="rl"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option></select></div><div><label>&nbsp;</label><button onclick="research()">🔎 ابحث وحلّل</button></div></div><div class="msg" id="rm"></div></div>
+ <div class="card out" id="ro" hidden></div>
+</section>
+<section id="t-image" hidden>
+ <div class="card"><label>وصف الصورة (يُفضَّل بالإنجليزية)</label><textarea id="ip"></textarea>
+ <div class="row"><div><label>الحجم</label><select id="is"><option>1024x1024</option><option>1280x720</option><option>720x1280</option></select></div><div><label>المزوّد</label><select id="iv"><option value="pol">Pollinations (مجاني)</option><option value="space">Space الخاص بي</option></select></div></div>
+ <button style="width:100%;margin-top:10px" onclick="genImage()">🖼 ولّد الصورة</button><div class="msg" id="im"></div></div>
+ <div class="card out" id="io" hidden></div>
+</section>
+<section id="t-video" hidden>
+ <div class="card"><label>وصف الفيديو (بالإنجليزية للحصول على أفضل نتيجة)</label><textarea id="vp"></textarea>
+ <label>ما لا تريده (اختياري)</label><input id="vn" placeholder="blurry, low quality, watermark, distorted">
+ <div class="row"><div><label>الدقة</label><select id="vs"><option>704x480</option><option>480x704</option><option>512x512</option></select></div><div><label>المدة</label><select id="vf"><option value="49">≈2 ث</option><option value="73">≈3 ث</option><option value="97" selected>≈4 ث</option><option value="121">≈5 ث</option></select></div></div>
+ <div class="row"><div><label>الخطوات</label><input id="vt" type="number" value="30"></div><div><label>البذرة (-1 عشوائي)</label><input id="vd" type="number" value="-1"></div></div>
+ <button style="width:100%;margin-top:10px" onclick="genVideo()">🎬 ولّد الفيديو</button><div class="msg" id="vm"></div></div>
+ <div class="card out" id="vo" hidden></div>
+</section>
+<section id="t-gallery" hidden><div class="card"><div class="grid" id="gg"></div><div class="msg" id="ge"></div></div></section>
+<section id="t-settings" hidden>
+ <div class="card"><b>🧠 نموذج اللغة (للبحث والتحليل)</b>
+ <label>المزوّد</label><select id="s-llm" onchange="preset()"><option value="pollinations">Pollinations (بدون مفتاح)</option><option value="groq">Groq (مفتاح مجاني)</option><option value="openrouter">OpenRouter</option><option value="hf">Hugging Face Router</option><option value="custom">مخصص (متوافق مع OpenAI)</option></select>
+ <label>الرابط الأساسي</label><input id="s-base"><label>المفتاح (اختياري)</label><input id="s-key" type="password"><label>النموذج</label><input id="s-model">
+ <label>مفتاح Tavily للبحث في الويب (اختياري)</label><input id="s-tav" type="password"></div>
+ <div class="card"><b>🎞 خلفية التوليد (Hugging Face Space)</b>
+ <label>رابط الـ Space</label><input id="s-space" placeholder="https://USER-SPACE.hf.space" dir="ltr">
+ <label>توكن Hugging Face (اختياري)</label><input id="s-hf" type="password">
+ <div class="row"><div><label>اسم واجهة الفيديو</label><input id="s-vapi" dir="ltr"></div><div><label>اسم واجهة الصورة</label><input id="s-iapi" dir="ltr"></div></div>
+ <label>قالب معاملات الفيديو</label><input id="s-vtpl" dir="ltr"><label>قالب معاملات الصورة</label><input id="s-itpl" dir="ltr">
+ <div class="msg">المتغيرات: {prompt} {negative} {w} {h} {frames} {steps} {seed} — ضع المتغير عنصراً كاملاً في المصفوفة.</div></div>
+ <button style="width:100%" onclick="saveS()">💾 حفظ الإعدادات</button><div class="msg" id="sm"></div>
+</section>
+</main>
+<nav id="nav"><button data-t="research" class="on"><b>🔎</b>بحث</button><button data-t="image"><b>🖼</b>صورة</button><button data-t="video"><b>🎬</b>فيديو</button><button data-t="gallery"><b>🗂</b>المعرض</button><button data-t="settings"><b>⚙️</b>إعدادات</button></nav>
+<script>
+const $=i=>document.getElementById(i),enc=encodeURIComponent,esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PRE={pollinations:['https://text.pollinations.ai/openai','openai'],groq:['https://api.groq.com/openai/v1','llama-3.3-70b-versatile'],openrouter:['https://openrouter.ai/api/v1','meta-llama/llama-3.3-70b-instruct:free'],hf:['https://router.huggingface.co/v1','meta-llama/Llama-3.3-70B-Instruct'],custom:['','']};
+const DEF={llm:'pollinations',base:PRE.pollinations[0],key:'',model:PRE.pollinations[1],tav:'',space:'',hf:'',vapi:'video',iapi:'image',vtpl:'["{prompt}","{negative}",{w},{h},{frames},{steps},{seed}]',itpl:'["{prompt}",{w},{h},{seed}]'};
+let S;try{S=Object.assign({},DEF,JSON.parse(localStorage.getItem('avs')||'{}'))}catch(e){S=Object.assign({},DEF)}
+const F={llm:'s-llm',base:'s-base',key:'s-key',model:'s-model',tav:'s-tav',space:'s-space',hf:'s-hf',vapi:'s-vapi',iapi:'s-iapi',vtpl:'s-vtpl',itpl:'s-itpl'};
+function loadS(){for(const k in F)$(F[k]).value=S[k]}
+function saveS(){for(const k in F)S[k]=$(F[k]).value.trim();try{localStorage.setItem('avs',JSON.stringify(S))}catch(e){}$('sm').textContent='✅ تم الحفظ'}
+function preset(){const p=PRE[$('s-llm').value];if(p[0]){$('s-base').value=p[0];$('s-model').value=p[1]}}
+function tab(t){document.querySelectorAll('section').forEach(s=>s.hidden=s.id!='t-'+t);document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));if(t=='gallery')gal();scrollTo(0,0)}
+$('nav').onclick=e=>{const b=e.target.closest('button');if(b)tab(b.dataset.t)};
+async function llm(messages){const u=S.llm=='pollinations'?S.base:S.base.replace(/\/$/,'')+'/chat/completions',h={'Content-Type':'application/json'};if(S.key)h.Authorization='Bearer '+S.key;
+ const r=await fetch(u,{method:'POST',headers:h,body:JSON.stringify({model:S.model,messages,temperature:.6})});if(!r.ok)throw new Error('LLM '+r.status);const j=await r.json();return j.choices[0].message.content}
+async function wiki(q,l){const u=`https://${l}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${enc(q)}&gsrlimit=4&prop=extracts&exintro=1&explaintext=1&exchars=900&format=json&origin=*`,j=await(await fetch(u)).json();
+ return Object.values(j.query?.pages||{}).sort((a,b)=>a.index-b.index).map(p=>({t:p.title,x:p.extract,u:`https://${l}.wikipedia.org/wiki/${enc(p.title.replace(/ /g,'_'))}`}))}
+async function tav(q){const r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:S.tav,query:q,max_results:5})});if(!r.ok)throw new Error('Tavily '+r.status);return(await r.json()).results.map(x=>({t:x.title,x:x.content,u:x.url}))}
+async function research(){const q=$('rq').value.trim();if(!q)return;const m=$('rm');m.textContent='⏳ جارٍ البحث في الإنترنت…';let src=[];
+ try{src=S.tav?await tav(q):await wiki(q,$('rl').value)}catch(e){m.textContent='⚠ تعذر البحث: '+e.message}
+ m.textContent='🧠 جارٍ التحليل…';
+ const ctx=src.map((s,i)=>`[${i+1}] ${s.t}: ${s.x}`).join('\n\n')||'(لا توجد مصادر)';
+ try{const t=await llm([{role:'system',content:'أنت مساعد أبحاث سينمائي. اعتمد على المصادر المرفقة فقط ولا تخترع معلومات. أجب بكائن JSON فقط بالمفاتيح: summary (ملخص بالعربية)، facts (قائمة حقائق بالعربية)، visuals (قائمة تفاصيل بصرية)، prompt_en (وصف سينمائي بالإنجليزية من 60 إلى 100 كلمة لتوليد فيديو)، negative_en (ما يُتجنَّب)، shots (قائمة لقطات بالإنجليزية).'},{role:'user',content:`الموضوع: ${q}\n\nالمصادر:\n${ctx}`}]);
+  let j;try{j=JSON.parse(t.match(/\{[\s\S]*\}/)[0])}catch(e){j={summary:t}}
+  window.R=j;const L=a=>Array.isArray(a)&&a.length?'<ul>'+a.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':'';
+  $('ro').innerHTML=`<h4>الملخص</h4><div>${esc(j.summary)}</div>${j.facts?'<h4>حقائق</h4>'+L(j.facts):''}${j.visuals?'<h4>تفاصيل بصرية</h4>'+L(j.visuals):''}${j.prompt_en?'<h4>Prompt</h4><div dir="ltr">'+esc(j.prompt_en)+'</div>':''}${j.shots?'<h4>لقطات مقترحة</h4>'+L(j.shots):''}${src.length?'<h4>المصادر</h4><ul>'+src.map(s=>`<li><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t)}</a></li>`).join('')+'</ul>':''}${j.prompt_en?'<div class="row" style="margin-top:10px"><button onclick="usePrompt(\'video\')">🎬 للفيديو</button><button class="s" onclick="usePrompt(\'image\')">🖼 للصورة</button></div>':''}`;
+  $('ro').hidden=false;m.textContent=''}catch(e){m.textContent='⚠ تعذر التحليل: '+e.message+' — راجع الإعدادات'}}
+function usePrompt(k){const j=window.R||{};if(k=='video'){$('vp').value=j.prompt_en||'';$('vn').value=j.negative_en||$('vn').value}else $('ip').value=j.prompt_en||'';tab(k)}
+function wh(v){return v.split('x').map(Number)}
+async function genImage(){const p=$('ip').value.trim();if(!p)return;const [w,h]=wh($('is').value),sd=Math.floor(Math.random()*1e6),m=$('im');m.textContent='⏳ جارٍ التوليد…';let url;
+ try{if($('iv').value=='pol')url=`https://image.pollinations.ai/prompt/${enc(p)}?width=${w}&height=${h}&seed=${sd}&model=flux&nologo=true`;
+  else{if(!S.space)throw new Error('أضف رابط Space من الإعدادات');const b=S.space.replace(/\/$/,'');url=findUrl(await gradio(b,S.iapi,fill(S.itpl,{prompt:p,w,h,seed:sd}),S.hf),b)}
+  show('io',url,'image',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}}
+async function genVideo(){const p=$('vp').value.trim();if(!p)return;if(!S.space){$('vm').textContent='⚠ أضف رابط Space من الإعدادات أولاً';tab('settings');return}
+ const [w,h]=wh($('vs').value),V={prompt:p,negative:$('vn').value,w,h,frames:+$('vf').value,steps:+$('vt').value,seed:+$('vd').value},m=$('vm'),t0=Date.now(),tm=setInterval(()=>m.textContent=`⏳ جارٍ التوليد… ${Math.round((Date.now()-t0)/1000)} ث (قد يستغرق دقائق)`,1000);
+ try{const b=S.space.replace(/\/$/,''),u=findUrl(await gradio(b,S.vapi,fill(S.vtpl,V),S.hf),b);if(!u)throw new Error('لم يُرجع الـ Space فيديو');show('vo',u,'video',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}clearInterval(tm)}
+function fill(t,V){return JSON.parse(t.replace(/"\{(\w+)\}"|\{(\w+)\}/g,(m,a,b)=>JSON.stringify(V[a||b])))}
+function parseSSE(t){let ev='',res=null;for(const l of t.split('\n')){if(l.startsWith('event:'))ev=l.slice(6).trim();else if(l.startsWith('data:')){const d=l.slice(5).trim();if(ev=='complete')res=JSON.parse(d);else if(ev=='error')throw new Error('خطأ من الـ Space: '+d.slice(0,160))}}if(!res)throw new Error('لا توجد نتيجة من الـ Space');return res}
+async function gradio(b,api,data,tok){const h={'Content-Type':'application/json'};if(tok)h.Authorization='Bearer '+tok;
+ const r=await fetch(`${b}/gradio_api/call/${api}`,{method:'POST',headers:h,body:JSON.stringify({data})});if(!r.ok)throw new Error('Space HTTP '+r.status);const {event_id}=await r.json();
+ const s=await fetch(`${b}/gradio_api/call/${api}/${event_id}`,{headers:h});return parseSSE(await s.text())}
+function findUrl(o,b){if(!o)return null;if(typeof o=='string')return /^https?:/.test(o)?o:null;if(Array.isArray(o)){for(const x of o){const u=findUrl(x,b);if(u)return u}return null}if(typeof o=='object'){if(o.url)return o.url;if(o.path)return b+'/gradio_api/file='+o.path;for(const k in o){const u=findUrl(o[k],b);if(u)return u}}return null}
+function show(id,url,type,prompt){const el=$(id);el.hidden=false;el.innerHTML=(type=='video'?`<video controls playsinline src="${esc(url)}"></video>`:`<img alt="" src="${esc(url)}">`)+'<div class="row" style="margin-top:10px"><button class="s" id="b1">⬇ تنزيل</button><button class="s" id="b2">💾 للمعرض</button>'+(type=='image'?'<button class="s" id="b3">🔍 حلّل</button>':'')+'</div><div class="msg" id="bm"></div>';
+ const nm=`avs-${Date.now()}.${type=='video'?'mp4':'jpg'}`;
+ $('b1').onclick=async()=>{try{const b=await(await fetch(url)).blob(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nm;a.click()}catch(e){window.open(url,'_blank')}};
+ $('b2').onclick=async()=>{await addG(type,prompt,url);$('bm').textContent='✅ حُفظ في المعرض'};
+ if(type=='image')$('b3').onclick=async()=>{$('bm').textContent='🔍 جارٍ التحليل…';try{const b=await(await fetch(url)).blob(),d=await new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});$('bm').textContent=await llm([{role:'user',content:[{type:'text',text:'حلّل هذه الصورة بالعربية: العناصر، الإضاءة، التكوين، وما يمكن تحسينه في الوصف.'},{type:'image_url',image_url:{url:d}}]}])}catch(e){$('bm').textContent='⚠ التحليل يحتاج نموذجاً يدعم الصور: '+e.message}}}
+const idb=new Promise(r=>{try{const q=indexedDB.open('avs',1);q.onupgradeneeded=()=>q.result.createObjectStore('g',{keyPath:'id'});q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)}catch(e){r(null)}});
+const MEM=[];
+async function gx(mode,f){const d=await idb;if(!d)return null;return new Promise(r=>{const t=d.transaction('g',mode),q=f(t.objectStore('g'));t.oncomplete=()=>r(q&&q.result);t.onerror=()=>r(null)})}
+async function addG(type,prompt,url){const it={id:Date.now(),type,prompt,url};try{it.blob=await(await fetch(url)).blob()}catch(e){}if(!await idb)MEM.push(it);else await gx('readwrite',s=>s.put(it))}
+async function gal(){const all=(await idb)?(await gx('readonly',s=>s.getAll())||[]):MEM,g=$('gg');g.innerHTML='';$('ge').textContent=all.length?'':'المعرض فارغ';
+ all.slice().reverse().forEach(it=>{const u=it.blob?URL.createObjectURL(it.blob):it.url,d=document.createElement('div');d.innerHTML=(it.type=='video'?`<video muted playsinline controls src="${esc(u)}"></video>`:`<img src="${esc(u)}" alt="">`)+'<i>×</i>';d.querySelector('i').onclick=async()=>{if(await idb)await gx('readwrite',s=>s.delete(it.id));else MEM.splice(MEM.indexOf(it),1);gal()};g.appendChild(d)})}
+loadS();
+if('serviceWorker' in navigator&&location.protocol=='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
