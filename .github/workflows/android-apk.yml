@@ -6,8 +6,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show files
-        run: ls -a && ls -a web
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -17,18 +15,22 @@ jobs:
           java-version: 17
       - name: Prepare Android project
         run: |
-          mkdir app
-          cp -r web app/www
-          cd app
+          M=$(find . -name manifest.webmanifest -not -path '*/node_modules/*' | head -n1)
+          echo "manifest: $M"
+          test -n "$M" || { echo "web folder not found"; exit 1; }
+          WEB=$(dirname "$M")
+          mkdir mobile
+          cp -r "$WEB" mobile/www
+          cd mobile
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           npx cap init "AI Video Studio" com.aivideo.studio --web-dir www
           npx cap add android
           npx cap sync android
       - name: Build debug APK
-        working-directory: app/android
+        working-directory: mobile/android
         run: ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: ai-video-studio-apk
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
