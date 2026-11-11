@@ -6,6 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Show files
+        run: ls -a && ls -a web
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -13,14 +15,20 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 --no-save
-      - run: |
-          npx cap init "AI Video Studio" com.aivideo.studio --web-dir web
+      - name: Prepare Android project
+        run: |
+          mkdir app
+          cp -r web app/www
+          cd app
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npx cap init "AI Video Studio" com.aivideo.studio --web-dir www
           npx cap add android
           npx cap sync android
-      - working-directory: android
+      - name: Build debug APK
+        working-directory: app/android
         run: ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: ai-video-studio-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/android/app/build/outputs/apk/debug/app-debug.apk
