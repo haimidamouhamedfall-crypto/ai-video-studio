@@ -51,6 +51,7 @@ nav button b{display:block;font-size:20px}nav button.on{color:var(--pr)}
 </section>
 <section id="t-video" hidden>
  <div class="card"><label>وصف الفيديو (بالإنجليزية للحصول على أفضل نتيجة)</label><textarea id="vp"></textarea>
+ <label>المزوّد</label><select id="vv"><option value="pol">Pollinations (Wan / Seedance)</option><option value="space">Space الخاص بي</option></select>
  <label>ما لا تريده (اختياري)</label><input id="vn" placeholder="blurry, low quality, watermark, distorted">
  <div class="row"><div><label>الدقة</label><select id="vs"><option>704x480</option><option>480x704</option><option>512x512</option></select></div><div><label>المدة</label><select id="vf"><option value="49">≈2 ث</option><option value="73">≈3 ث</option><option value="97" selected>≈4 ث</option><option value="121">≈5 ث</option></select></div></div>
  <div class="row"><div><label>الخطوات</label><input id="vt" type="number" value="30"></div><div><label>البذرة (-1 عشوائي)</label><input id="vd" type="number" value="-1"></div></div>
@@ -63,6 +64,10 @@ nav button b{display:block;font-size:20px}nav button.on{color:var(--pr)}
  <label>المزوّد</label><select id="s-llm" onchange="preset()"><option value="pollinations">Pollinations (بدون مفتاح)</option><option value="groq">Groq (مفتاح مجاني)</option><option value="openrouter">OpenRouter</option><option value="hf">Hugging Face Router</option><option value="custom">مخصص (متوافق مع OpenAI)</option></select>
  <label>الرابط الأساسي</label><input id="s-base"><label>المفتاح (اختياري)</label><input id="s-key" type="password"><label>النموذج</label><input id="s-model">
  <label>مفتاح Tavily للبحث في الويب (اختياري)</label><input id="s-tav" type="password"></div>
+ <div class="card"><b>🎬 فيديو Pollinations</b>
+ <label>مفتاح Pollinations (مجاني من enter.pollinations.ai)</label><input id="s-pk" type="password" dir="ltr">
+ <label>نموذج الفيديو (اختياري، اتركه فارغاً للافتراضي)</label><input id="s-pm" dir="ltr" placeholder="wan-fast">
+ <div class="msg">النماذج المتاحة لك: gen.pollinations.ai/video/models</div></div>
  <div class="card"><b>🎞 خلفية التوليد (Hugging Face Space)</b>
  <label>رابط الـ Space</label><input id="s-space" placeholder="https://USER-SPACE.hf.space" dir="ltr">
  <label>توكن Hugging Face (اختياري)</label><input id="s-hf" type="password">
@@ -76,9 +81,9 @@ nav button b{display:block;font-size:20px}nav button.on{color:var(--pr)}
 <script>
 const $=i=>document.getElementById(i),enc=encodeURIComponent,esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PRE={pollinations:['https://text.pollinations.ai/openai','openai'],groq:['https://api.groq.com/openai/v1','llama-3.3-70b-versatile'],openrouter:['https://openrouter.ai/api/v1','meta-llama/llama-3.3-70b-instruct:free'],hf:['https://router.huggingface.co/v1','meta-llama/Llama-3.3-70B-Instruct'],custom:['','']};
-const DEF={llm:'pollinations',base:PRE.pollinations[0],key:'',model:PRE.pollinations[1],tav:'',space:'',hf:'',vapi:'video',iapi:'image',vtpl:'["{prompt}","{negative}",{w},{h},{frames},{steps},{seed}]',itpl:'["{prompt}",{w},{h},{seed}]'};
+const DEF={llm:'pollinations',base:PRE.pollinations[0],key:'',model:PRE.pollinations[1],tav:'',space:'',hf:'',vapi:'video',iapi:'image',vtpl:'["{prompt}","{negative}",{w},{h},{frames},{steps},{seed}]',itpl:'["{prompt}",{w},{h},{seed}]',pk:'',pm:''};
 let S;try{S=Object.assign({},DEF,JSON.parse(localStorage.getItem('avs')||'{}'))}catch(e){S=Object.assign({},DEF)}
-const F={llm:'s-llm',base:'s-base',key:'s-key',model:'s-model',tav:'s-tav',space:'s-space',hf:'s-hf',vapi:'s-vapi',iapi:'s-iapi',vtpl:'s-vtpl',itpl:'s-itpl'};
+const F={llm:'s-llm',base:'s-base',key:'s-key',model:'s-model',tav:'s-tav',space:'s-space',hf:'s-hf',vapi:'s-vapi',iapi:'s-iapi',vtpl:'s-vtpl',itpl:'s-itpl',pk:'s-pk',pm:'s-pm'};
 function loadS(){for(const k in F)$(F[k]).value=S[k]}
 function saveS(){for(const k in F)S[k]=$(F[k]).value.trim();try{localStorage.setItem('avs',JSON.stringify(S))}catch(e){}$('sm').textContent='✅ تم الحفظ'}
 function preset(){const p=PRE[$('s-llm').value];if(p[0]){$('s-base').value=p[0];$('s-model').value=p[1]}}
@@ -104,7 +109,15 @@ async function genImage(){const p=$('ip').value.trim();if(!p)return;const [w,h]=
  try{if($('iv').value=='pol')url=`https://image.pollinations.ai/prompt/${enc(p)}?width=${w}&height=${h}&seed=${sd}&model=flux&nologo=true`;
   else{if(!S.space)throw new Error('أضف رابط Space من الإعدادات');const b=S.space.replace(/\/$/,'');url=findUrl(await gradio(b,S.iapi,fill(S.itpl,{prompt:p,w,h,seed:sd}),S.hf),b)}
   show('io',url,'image',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}}
-async function genVideo(){const p=$('vp').value.trim();if(!p)return;if(!S.space){$('vm').textContent='⚠ أضف رابط Space من الإعدادات أولاً';tab('settings');return}
+async function genPolVideo(p,w,h,fr,m){if(!S.pk)throw new Error('أضف مفتاح Pollinations من الإعدادات (مجاني من enter.pollinations.ai)');
+ const d=Math.max(2,Math.round((fr-1)/24)),ar=w>h?'16:9':h>w?'9:16':'1:1',q=new URLSearchParams({duration:d,aspectRatio:ar,key:S.pk});if(S.pm)q.set('model',S.pm);
+ const r=await fetch(`https://gen.pollinations.ai/video/${enc(p)}?${q}`);
+ if(!r.ok){let t='';try{t=(await r.text()).slice(0,140)}catch(e){}throw new Error(r.status==401||r.status==403?'المفتاح مرفوض أو الرصيد (Pollen) غير كافٍ':r.status==402?'رصيد Pollen غير كافٍ لهذا النموذج':`Pollinations ${r.status} ${t}`)}
+ const b=await r.blob();if(!/video|octet/.test(b.type))throw new Error('الرد ليس فيديو: '+b.type);return URL.createObjectURL(b)}
+async function genVideo(){const p=$('vp').value.trim();if(!p)return;
+ if($('vv').value=='pol'){const [w,h]=wh($('vs').value),m=$('vm'),t0=Date.now(),tm=setInterval(()=>m.textContent=`⏳ جارٍ التوليد… ${Math.round((Date.now()-t0)/1000)} ث (قد يستغرق دقائق)`,1000);
+  try{const u=await genPolVideo(p,w,h,+$('vf').value,m);show('vo',u,'video',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}clearInterval(tm);return}
+ if(!S.space){$('vm').textContent='⚠ أضف رابط Space من الإعدادات أولاً';tab('settings');return}
  const [w,h]=wh($('vs').value),V={prompt:p,negative:$('vn').value,w,h,frames:+$('vf').value,steps:+$('vt').value,seed:+$('vd').value},m=$('vm'),t0=Date.now(),tm=setInterval(()=>m.textContent=`⏳ جارٍ التوليد… ${Math.round((Date.now()-t0)/1000)} ث (قد يستغرق دقائق)`,1000);
  try{const b=S.space.replace(/\/$/,''),u=findUrl(await gradio(b,S.vapi,fill(S.vtpl,V),S.hf),b);if(!u)throw new Error('لم يُرجع الـ Space فيديو');show('vo',u,'video',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}clearInterval(tm)}
 function fill(t,V){return JSON.parse(t.replace(/"\{(\w+)\}"|\{(\w+)\}/g,(m,a,b)=>JSON.stringify(V[a||b])))}
