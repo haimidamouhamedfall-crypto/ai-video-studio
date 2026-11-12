@@ -109,14 +109,17 @@ async function genImage(){const p=$('ip').value.trim();if(!p)return;const [w,h]=
  try{if($('iv').value=='pol')url=`https://image.pollinations.ai/prompt/${enc(p)}?width=${w}&height=${h}&seed=${sd}&model=flux&nologo=true`;
   else{if(!S.space)throw new Error('أضف رابط Space من الإعدادات');const b=S.space.replace(/\/$/,'');url=findUrl(await gradio(b,S.iapi,fill(S.itpl,{prompt:p,w,h,seed:sd}),S.hf),b)}
   show('io',url,'image',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}}
-async function genPolVideo(p,w,h,fr,m){if(!S.pk)throw new Error('أضف مفتاح Pollinations من الإعدادات (مجاني من enter.pollinations.ai)');
+function polUrl(p,w,h,fr){if(!S.pk)throw new Error('أضف مفتاح Pollinations من الإعدادات (مجاني من enter.pollinations.ai)');
  const d=Math.max(2,Math.round((fr-1)/24)),ar=w>h?'16:9':h>w?'9:16':'1:1',q=new URLSearchParams({duration:d,aspectRatio:ar,key:S.pk});if(S.pm)q.set('model',S.pm);
- const r=await fetch(`https://gen.pollinations.ai/video/${enc(p)}?${q}`);
- if(!r.ok){let t='';try{t=(await r.text()).slice(0,140)}catch(e){}throw new Error(r.status==401||r.status==403?'المفتاح مرفوض أو الرصيد (Pollen) غير كافٍ':r.status==402?'رصيد Pollen غير كافٍ لهذا النموذج':`Pollinations ${r.status} ${t}`)}
- const b=await r.blob();if(!/video|octet/.test(b.type))throw new Error('الرد ليس فيديو: '+b.type);return URL.createObjectURL(b)}
+ return `https://gen.pollinations.ai/video/${enc(p)}?${q}`}
 async function genVideo(){const p=$('vp').value.trim();if(!p)return;
- if($('vv').value=='pol'){const [w,h]=wh($('vs').value),m=$('vm'),t0=Date.now(),tm=setInterval(()=>m.textContent=`⏳ جارٍ التوليد… ${Math.round((Date.now()-t0)/1000)} ث (قد يستغرق دقائق)`,1000);
-  try{const u=await genPolVideo(p,w,h,+$('vf').value,m);show('vo',u,'video',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}clearInterval(tm);return}
+ if($('vv').value=='pol'){const [w,h]=wh($('vs').value),m=$('vm'),t0=Date.now();let u;
+  try{u=polUrl(p,w,h,+$('vf').value)}catch(e){m.textContent='⚠ '+e.message;return}
+  const tm=setInterval(()=>m.textContent=`⏳ جارٍ التوليد… ${Math.round((Date.now()-t0)/1000)} ث (قد يستغرق دقائق)`,1000);
+  show('vo',u,'video',p);const v=$('vo').querySelector('video');
+  v.onloadeddata=()=>{clearInterval(tm);m.textContent=''};
+  v.onerror=()=>{clearInterval(tm);m.innerHTML='⚠ تعذر تحميل الفيديو (مفتاح خاطئ أو رصيد غير كافٍ أو النموذج غير متاح). <a href="'+esc(u)+'" target="_blank" rel="noopener">افتح الرابط في المتصفح لمعرفة السبب</a>'};
+  return}
  if(!S.space){$('vm').textContent='⚠ أضف رابط Space من الإعدادات أولاً';tab('settings');return}
  const [w,h]=wh($('vs').value),V={prompt:p,negative:$('vn').value,w,h,frames:+$('vf').value,steps:+$('vt').value,seed:+$('vd').value},m=$('vm'),t0=Date.now(),tm=setInterval(()=>m.textContent=`⏳ جارٍ التوليد… ${Math.round((Date.now()-t0)/1000)} ث (قد يستغرق دقائق)`,1000);
  try{const b=S.space.replace(/\/$/,''),u=findUrl(await gradio(b,S.vapi,fill(S.vtpl,V),S.hf),b);if(!u)throw new Error('لم يُرجع الـ Space فيديو');show('vo',u,'video',p);m.textContent=''}catch(e){m.textContent='⚠ '+e.message}clearInterval(tm)}
